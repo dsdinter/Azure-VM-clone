@@ -2,7 +2,8 @@ Azure-VM-clone
 ==============
 
 Azure Powershell script to clone VMs accross Subscription or within the same.
-The Original script comes from:
+
+This script is based from below work.
 http://gallery.technet.microsoft.com/scriptcenter/Copy-a-Virtual-Machine-83d192a5#content
 
 

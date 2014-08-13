@@ -1,6 +1,6 @@
 <#
  Copyright (c) Opsgility.  All rights reserved.
-
+ Copyright (c) David Sabater 2014.  All rights reserved.
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -25,6 +25,10 @@
   
   Verify by running the following command to ensure that both subscriptions are listed: 
   Get-AzureSubscription | select SubscriptionName 
+
+  New functionality added by David Sabater:
+  1. Fixed issues with Location variable with new Azure SDK version
+  2. Modify disk name appending VM new name to be able to copy VM within same subscription and renaming VM to new one
   
 
   .DESCRIPTION
@@ -36,9 +40,9 @@
   
   Once validation is complete the script will copy the disks from the backup in the source storage account to the destination storage account. 
 
-  Once the copy is complete the script will register the disks in the subscription with the same disk names to match the virtual machine configuration. 
+  Once the copy is complete the script will register the disks in the subscription with the same disk names but appending the new Virtual Machine name to match new Virtual Machine cloned, this gives the capability to clone VM within same Subscription
 
-  The script next will export the virtual machine settings to a local file on the file system and import them into the target subscription and create the virtual machine. 
+  The script next will export the virtual machine settings to a local file on the file system and import them into the target subscription and create the virtual machine with the new name selected. 
    
   
   .EXAMPLE
@@ -255,6 +259,7 @@ else
     # Validate storage account location matches destination location
     $tmpDestStorage = Get-AzureStorageAccount -StorageAccountName $DestinationStorageAccount 
     $templocation=$tmpDestStorage.GeoPrimaryLocation
+    # DS - 1. Fixed issues with Location variable with new Azure SDK version
     if($tmpDestStorage.GeoPrimaryLocation -ne $g_DestinationStorageAccountLocation)
     {
         Write-Error "Destination Storage Account Location $templocation does not match specified location or virtual network affinity group location $g_DestinationStorageAccountLocation."
@@ -456,10 +461,12 @@ Write-Host "Saving Virtual Machine Configuration to $configPath" -ForegroundColo
 Export-AzureVM -ServiceName $SourceServiceName -Name $VirtualMachineName -Path $configPath
 
 [xml] $configVMXML = Get-Content $configPath
-# Modify disk name appending VM new name to be able to copy VM within same subscription and renaming VM to destination selected name
+# DS.BEGIN - 2.Modify disk name appending VM new name to be able to copy VM within same subscription and renaming VM to destination selected name
 $configVMXML.PersistentVM.OSVirtualHardDisk.DiskName = $configVMXML.PersistentVM.OSVirtualHardDisk.DiskName + "-" + $DestinationVirtualMachineName
 $configVMXML.PersistentVM.RoleName = $DestinationVirtualMachineName
 $configVMXML.Save($configPath)
+# DS.END - 2.Modify disk name appending VM new name to be able to copy VM within same subscription and renaming VM to destination selected name
+
 # Import and create virtual machine in destination subscription
 Select-AzureSubscription $DestinationSubscription
 
